@@ -1,0 +1,21 @@
+{
+  "name": "pl-class-rescript",
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "clean": "rescript clean",
+    "build": "rescript build",
+    "watch": "rescript build -w",
+    "single-test-with-env": "npm run build && node lib/es6/tests/Test${PROGRAM}.bs.js",
+    "test-part0": "PROGRAM=Part0 npm run single-test-with-env",
+    "tests": "PROGRAM=ALL npm run single-test-with-env"
+  },
+  "keywords": [
+    "ReScript"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "rescript": "^10.0.1"
+  }
+}
