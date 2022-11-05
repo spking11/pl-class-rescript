@@ -1,10 +1,10 @@
 let find_index = (cenv, x) => {
   let rec _find_index = (cenv, n) => {
     switch cenv {
-    | list{} => raise(Not_found)
+    | list{} => None
     | list{a, ...rest} =>
       if a == x {
-        n
+        Some(n)
       } else {
         _find_index(rest, n + 1)
       }
@@ -105,9 +105,15 @@ module Language1 = {
     }
   }
 
+  // Machine Instructions with variables
   module Instr = {
-    // Machine Instructions with variables
-    type instr = Cst(int) | Add | Mul | Var(int) | Pop | Swap
+    type instr =
+      | Cst(int)
+      | Add
+      | Mul
+      | Var(int) // the int value means the index of local variables, from inside to outside
+      | Pop
+      | Swap
 
     // Interpreter
     let rec eval = (instrs, stk) => {
@@ -131,7 +137,7 @@ module Language1 = {
     let sindex = (senv, s) => {
       let rec _compile = (senv, acc) => {
         switch senv {
-        | list{} => raise(Not_found)
+        | list{} => assert false
         | list{Slocal(x), ...rest} =>
           if x == s {
             acc
@@ -174,7 +180,7 @@ module Language1 = {
         | Cst(i) => Cst(i)
         | Add(a, b) => Add(_compile(a, cenv), _compile(b, cenv))
         | Mul(a, b) => Mul(_compile(a, cenv), _compile(b, cenv))
-        | Var(x) => Var(cenv->find_index(x))
+        | Var(x) => Var(cenv->find_index(x)->Belt.Option.getExn)
         | Let(x, e1, e2) => Let(_compile(e1, cenv), _compile(e2, list{x, ...cenv}))
         }
       }
@@ -189,7 +195,7 @@ module Language1 = {
     let sindex = (senv, i) => {
       let rec _compile = (senv, i, acc) => {
         switch senv {
-        | list{} => raise(Not_found)
+        | list{} => assert false
         | list{Slocal, ...rest} =>
           if i == 0 {
             acc
@@ -207,6 +213,8 @@ module Language1 = {
         switch expr {
         | Cst(i) => list{Cst(i)}
         | Var(s) => list{Var(sindex(senv, s))}
+        // when local var reference appear in the right of a binary operator,
+        // the stack will push the left temp value
         | Add(e1, e2) =>
           Belt.List.concatMany([_compile(e1, senv), _compile(e2, list{Stmp, ...senv}), list{Add}])
         | Mul(e1, e2) =>

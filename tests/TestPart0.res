@@ -54,16 +54,16 @@ module TestLanguage1 = {
     }->Belt.List.forEach(((expr, result)) => assert (eval(expr, list{}) == result))
 
     // Wrong case
-    exception Run_Wrong
+    exception Unreached
     list{
       Let("x", Add(Cst(1), Cst(2)), Mul(Var("x"), Var("y"))),
       Let("y", Let("x", Add(Cst(1), Cst(2)), Mul(Var("x"), Var("x"))), Mul(Var("y"), Var("x"))),
     }->Belt.List.forEach(expr =>
       try {
         eval(expr, list{})->ignore
-        raise(Run_Wrong)
+        raise(Unreached)
       } catch {
-      | Run_Wrong => assert false
+      | Unreached => assert false
       | _ => 0
       }
     )
@@ -112,6 +112,18 @@ module TestLanguage1 = {
         Expr.Let("x", Add(Cst(1), Cst(2)), Mul(Var("x"), Var("x"))),
         NamelessExpr.Let(Add(Cst(1), Cst(2)), Mul(Var(0), Var(0))),
       ),
+      (
+        Expr.Let("x", Cst(1), Let("y", Cst(2), Add(Var("x"), Var("y")))),
+        NamelessExpr.Let(Cst(1), Let(Cst(2), Add(Var(1), Var(0)))),
+      ),
+      (
+        Expr.Let(
+          "x",
+          Cst(1),
+          Let("y", Cst(2), Let("z", Cst(3), Mul(Add(Var("x"), Var("y")), Var("z")))),
+        ),
+        NamelessExpr.Let(Cst(1), Let(Cst(2), Let(Cst(3), Mul(Add(Var(2), Var(1)), Var(0))))),
+      ),
     }->Belt.List.forEach(((expr, result)) => assert (compile(expr) == result))
 
     Js.log(`TestLanguage1:testExpr2NamelessExpr Passed`)
@@ -123,6 +135,14 @@ module TestLanguage1 = {
       (
         NamelessExpr.Let(Add(Cst(1), Cst(2)), Mul(Var(0), Var(0))),
         list{Instr.Cst(1), Cst(2), Add, Var(0), Var(1), Mul, Swap, Pop},
+      ),
+      (
+        NamelessExpr.Let(Cst(1), Mul(Cst(2), Add(Cst(3), Var(0)))),
+        list{Instr.Cst(1), Cst(2), Cst(3), Var(2), Add, Mul, Swap, Pop},
+      ),
+      (
+        NamelessExpr.Let(Cst(1), Let(Cst(2), Add(Var(1), Var(0)))),
+        list{Instr.Cst(1), Cst(2), Var(1), Var(1), Add, Swap, Pop, Swap, Pop},
       ),
     }->Belt.List.forEach(((expr, result)) => assert (compile(expr) == result))
 
